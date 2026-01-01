@@ -1,12 +1,10 @@
 // test game without using file handling
-#include <iostream>
 #include <stdio.h>
 #include <conio.h>
 #include <windows.h>  
 #include <stdlib.h>   
 #include <stdbool.h>  
 #include <string.h>
-#include <time.h>
 
 void enableAnsi();
 void gotoxy(int x, int y);

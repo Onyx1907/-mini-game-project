@@ -4,7 +4,6 @@
 #include <stdlib.h>   
 #include <stdbool.h>  
 #include <string.h>
-#include <time.h>
 
 void enableAnsi();
 void gotoxy(int x, int y);
@@ -21,7 +20,7 @@ void drawLoginFrame();
 void clearLine(int y);
 void LoginScreen();
 void ShowScoreboardScreen();
-void saveScoreToFile();
+void saveBestScore();
 
 #define RED     "\x1b[31m"
 #define GREEN   "\x1b[32m"
@@ -61,14 +60,15 @@ typedef enum{
 } GameState;
 GameState state = LOGIN;
 
-typedef struct {
+struct USER{
     char username[50];
     char password[50];
-    int bestScoreMap1;
-    int bestScoreMap2; 
-} User;
-User currentUser;
-char usersFile[] = "users.dat";
+    int bestScoreMap1 = 0;
+    int bestScoreMap2 = 0; 
+};
+struct USER *currentUser = NULL;
+struct USER users[50];
+int userCnt = 0;
 
 int main()
 {
@@ -236,7 +236,7 @@ void ShowGameoverScean()
     nTail = 0;
     if(gameoverDrawn == 0)
     {
-        saveScoreToFile();
+        saveBestScore();
         system("cls");
 
         printf("\n\n");
@@ -484,7 +484,8 @@ void logic()
 
 }
 
-void getPasswordMasked(char *password) {
+void getPasswordMasked(char *password) 
+{
     int i = 0;
     char ch;
     while (1) {
@@ -508,7 +509,8 @@ void getPasswordMasked(char *password) {
     }
 }
 
-void drawLoginFrame() {
+void drawLoginFrame() 
+{
     system("cls");
     printf("\n\n");
     printf(CYAN "      =======================================\n");
@@ -522,41 +524,39 @@ void drawLoginFrame() {
     printf(CYAN "      =======================================\n" RESET);
 }
 
-void clearLine(int y) {
+void clearLine(int y) 
+{
     gotoxy(0, y);
     printf("                                                 "); 
     gotoxy(0, y);
 }
 
-void LoginScreen() {
-    FILE *fp;
+void LoginScreen() 
+{
+
     char inputUser[50];
     char inputPass[50];
     char inputPass2[50];
     int found = 0;
-    User tempUser;
+    int i = 0;
+    struct USER *tempUser;
 
     drawLoginFrame();  
 
     gotoxy(16, 6);
     printf(YELLOW);
-    fflush(stdout);
 
-    fgets(inputUser, sizeof(inputUser), stdin);
-    inputUser[strcspn(inputUser, "\n")] = 0;
+    scanf("%s", inputUser);
     printf(RESET);
 
-    fp = fopen(usersFile, "rb");
-    if (fp) {
-        while (fread(&tempUser, sizeof(User), 1, fp)) 
+    for (i = 0; i < userCnt; i++) 
+    {
+        tempUser = &users[i];
+        if (strcmp(tempUser->username, inputUser) == 0) 
         {
-            if (strcmp(tempUser.username, inputUser) == 0) 
-            {
-                found = 1;
-                break;
-            }
+            found = 1;
+            break;
         }
-        fclose(fp);
     }
 
     if (found)
@@ -568,12 +568,12 @@ void LoginScreen() {
             getPasswordMasked(inputPass);
             printf(RESET);
 
-            if (strcmp(tempUser.password, inputPass) == 0) 
+            if (strcmp(tempUser->password, inputPass) == 0) 
             {
                 currentUser = tempUser;
                 clearLine(10);
                 gotoxy(6, 10);
-                printf(GREEN "Login Successful! Welcome back, %s :)" RESET, currentUser.username);
+                printf(GREEN "Login Successful! Welcome back, %s :)" RESET, currentUser->username);
                 Sleep(1200);
                 return;
             }
@@ -615,18 +615,17 @@ void LoginScreen() {
 
             if(strcmp(inputPass, inputPass2) == 0)
             {
-                strcpy(currentUser.username, inputUser);
-                strcpy(currentUser.password, inputPass);
-                currentUser.bestScoreMap1 = 0;
-                currentUser.bestScoreMap2 = 0;
+                currentUser = &users[userCnt];
+                strcpy(currentUser->username, inputUser);
+                strcpy(currentUser->password, inputPass);
+                currentUser->bestScoreMap1 = 0;
+                currentUser->bestScoreMap2 = 0;
 
-                fp = fopen(usersFile, "ab");
-                fwrite(&currentUser, sizeof(User), 1, fp);
-                fclose(fp);
+                userCnt++;
 
                 clearLine(10);
                 gotoxy(6, 10);
-                printf(GREEN "Registration Successful! Welcome, %s." RESET, currentUser.username);
+                printf(GREEN "Registration Successful! Welcome, %s." RESET, currentUser->username);
                 Sleep(1500);
                 return;
             }
@@ -641,42 +640,14 @@ void LoginScreen() {
     }
 }
 
-void ShowScoreboardScreen() {
+void ShowScoreboardScreen() 
+{
 
-    if (scoreboardDrawn == 0) {
+    if (scoreboardDrawn == 0) 
+    {
         system("cls"); 
 
-        User allUsers[100];
-        int count = 0;
-
-        FILE *fp = fopen(usersFile, "rb");
-        if (fp) {
-            while (fread(&allUsers[count], sizeof(User), 1, fp)) {
-                count++;
-                if (count >= 100) break;
-            }
-            fclose(fp);
-        }
-
-        for (int i = 0; i < count - 1; i++) {
-            for (int j = 0; j < count - i - 1; j++) {
-                int scoreA, scoreB;
-                
-                if (currentMap == 1) {
-                    scoreA = allUsers[j].bestScoreMap1;
-                    scoreB = allUsers[j + 1].bestScoreMap1;
-                } else {
-                    scoreA = allUsers[j].bestScoreMap2;
-                    scoreB = allUsers[j + 1].bestScoreMap2;
-                }
-
-                if (scoreB > scoreA) {
-                    User temp = allUsers[j];
-                    allUsers[j] = allUsers[j + 1];
-                    allUsers[j + 1] = temp;
-                }
-            }
-        }
+        struct USER allUsers[100];
 
         printf("\n\n");
         printf(PURPLE "      =======================================\n");
@@ -687,27 +658,52 @@ void ShowScoreboardScreen() {
         printf(CYAN "      %-6s %-20s %-10s\n" RESET, "RANK", "USERNAME", "SCORE");
         printf("      ---------------------------------------\n");
 
-        if (count == 0) {
+
+        for (int i = 0; i < userCnt - 1; i++) 
+        {
+            for (int j = 0; j < userCnt - i - 1; j++) 
+            {
+                int scoreA, scoreB;
+                
+                if (currentMap == 1) 
+                {
+                    scoreA = users[j].bestScoreMap1;
+                    scoreB = users[j + 1].bestScoreMap1;
+                } 
+                else 
+                {
+                    scoreA = users[j].bestScoreMap2;
+                    scoreB = users[j + 1].bestScoreMap2;
+                }
+
+                if (scoreB > scoreA) {
+                    struct USER temp = users[j];
+                    users[j] = users[j + 1];
+                    users[j + 1] = temp;
+                }
+            }
+        }
+
+        if (userCnt == 0) 
+        {
             printf("\n      No records found yet!\n");
         }
 
-        for (int i = 0; i < count; i++) {
-            int score = (currentMap == 1) ? allUsers[i].bestScoreMap1 : allUsers[i].bestScoreMap2;
+        for (int i = 0; i < userCnt; i++) 
+        {
+            int score = (currentMap == 1) ? users[i].bestScoreMap1 : users[i].bestScoreMap2;
       
             char *color = RESET;
             if (i == 0) color = GOLD;      
             else if (i == 1) color = SILVER;    
             else if (i == 2) color = BRONZE;     
-
-            printf("%s      %-6d %-20s %-10d" RESET "\n", color, i + 1, allUsers[i].username, score);
+            printf("%s      %-6d %-20s %-10d" RESET "\n", color, i + 1, users[i].username, score);
         }
-
+        
         printf("\n\n");
         printf("      Press any key to return to menu...");
-
         scoreboardDrawn = 1; 
     }
-
 
     if (_kbhit()) {
         char ch = _getch(); 
@@ -719,24 +715,33 @@ void ShowScoreboardScreen() {
     }
 }
 
-void saveScoreToFile() {
-    FILE *fp = fopen(usersFile, "rb+");
-    if (!fp) return;
-
-    User temp;
-    while (fread(&temp, sizeof(User), 1, fp)) {
-        if (strcmp(temp.username, currentUser.username) == 0) {
-
-            if (currentMap == 1 && score > temp.bestScoreMap1)
-                temp.bestScoreMap1 = score;
-
-            if (currentMap == 2 && score > temp.bestScoreMap2)
-                temp.bestScoreMap2 = score;
-
-            fseek(fp, -sizeof(User), SEEK_CUR);
-            fwrite(&temp, sizeof(User), 1, fp);
+void saveBestScore()
+{
+    if(currentMap == 1)
+    {
+        if(score > currentUser->bestScoreMap1)
+        {
+            currentUser->bestScoreMap1 = score;
+        }
+    }
+    else
+    {
+        if(score > currentUser->bestScoreMap2)
+        {
+            currentUser->bestScoreMap2 = score;
+        }
+    }
+    for (int i = 0; i < userCnt; i++)
+    {
+        if(strcmp(currentUser->username, users[i].username) == 0)
+        {
+            if(currentMap == 1)
+                users[i].bestScoreMap1 = currentUser->bestScoreMap1;
+            else
+                users[i].bestScoreMap2 = currentUser->bestScoreMap2;
             break;
         }
     }
-    fclose(fp);
+    
 }
+
