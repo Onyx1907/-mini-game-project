@@ -4,6 +4,7 @@
 #include <stdlib.h>   
 #include <stdbool.h>  
 #include <string.h>
+#include <time.h>
 
 void enableAnsi();
 void gotoxy(int x, int y);
@@ -22,12 +23,12 @@ void LoginScreen();
 void ShowScoreboardScreen();
 void saveBestScore();
 
-#define RED     "\x1b[31m"
-#define GREEN   "\x1b[32m"
-#define YELLOW  "\x1b[33m"
+#define RED     "\x1b[38;5;203m"
+#define GREEN   "\x1b[38;5;120m"
+#define YELLOW  "\x1b[38;5;214m"
 #define BLUE    "\x1b[34m"
-#define PURPLE "\x1b[35m"
-#define CYAN    "\x1b[36m"
+#define PURPLE "\x1b[38;5;141m"
+#define CYAN    "\x1b[38;5;117m"
 #define GOLD    "\x1b[38;5;220m"
 #define SILVER "\x1b[38;5;248m"
 #define BRONZE  "\x1b[38;5;130m"
@@ -37,6 +38,11 @@ int height = 20, width = 50;
 int x, y;
 int fruitX, fruitY;
 int isSuperApple = 0;
+int isQuince = 0;
+int isAnnona = 0;
+int TimeFruit = 0;
+int Timespeed = 0;
+int isFastSnake = 0;
 int score;
 int gameover;
 int currentMap = 1;
@@ -95,7 +101,9 @@ int main()
             draw();
             input();
             logic();
-            if(currentMap == 1)
+            if(isFastSnake)
+                Sleep(20);
+            else if(currentMap == 1)
                 Sleep(70);
             else
                 Sleep(90);
@@ -277,6 +285,17 @@ void RespawnFruit()
         fruitY = rand() % height;
         
         isSuperApple = (rand() % 10) == 0;
+        if(!isSuperApple)
+        {
+            isAnnona = (rand() % 20) == 0;
+            TimeFruit = clock();
+        }
+        if (!isSuperApple && !isAnnona)
+        {
+            isQuince = (rand() % 5) == 0;
+            TimeFruit = clock();
+        }
+        
 
         valid = 1; 
 
@@ -331,7 +350,11 @@ void draw()
             else if(i == fruitY && j == fruitX)
             {
                 if(isSuperApple)
-                    printf(YELLOW "%c" RESET, 149);
+                    printf(GOLD "%c" RESET, 149);
+                else if(isAnnona)
+                    printf(GREEN "%c" RESET, 153);
+                else if(isQuince)
+                    printf(YELLOW "%c" RESET, 153);
                 else
                     printf(RED "%c" RESET, 149);
             }
@@ -357,7 +380,11 @@ void draw()
         printf(BLUE "%c" RESET, 219);
     printf("\n\n");
     printf(YELLOW "Score : %d\n" RESET, score);
-    printf("Length of your snake : %d", nTail + 1);
+    printf("Length of your snake : %d\n", nTail + 1);
+    if(isFastSnake)
+        printf(GREEN "your snake is fast for %d    " RESET, int(10.0 - ((clock() - Timespeed) / CLOCKS_PER_SEC)));
+    else
+        clearLine(25);
 }
 
 void input()
@@ -449,6 +476,18 @@ void logic()
             break;
     }
 
+    if((clock() - TimeFruit) / CLOCKS_PER_SEC >= 10)
+    {
+        isQuince = 0;
+        isAnnona = 0;
+        TimeFruit = 0;
+    }
+    if((clock() - Timespeed) / CLOCKS_PER_SEC >= 10)
+    {
+        Timespeed = 0;
+        isFastSnake = 0;
+    }
+
     if(x >= width + 1 || x <= 0)
         gameover = 1;
     
@@ -466,6 +505,23 @@ void logic()
         if(isSuperApple)
         {
             score += 15;
+            isSuperApple = 0;
+            RespawnFruit();
+        }
+        else if(isAnnona)
+        {
+            score += 50;
+            nTail++;
+            isAnnona = 0;
+            RespawnFruit();
+        }
+        else if(isQuince)
+        {
+            score += 5;
+            nTail++;
+            isFastSnake = 1;
+            isQuince = 0;
+            Timespeed = clock();
             RespawnFruit();
         }
         else
@@ -571,16 +627,16 @@ void LoginScreen()
             if (strcmp(tempUser->password, inputPass) == 0) 
             {
                 currentUser = tempUser;
-                clearLine(10);
-                gotoxy(6, 10);
+                clearLine(11);
+                gotoxy(6, 11);
                 printf(GREEN "Login Successful! Welcome back, %s :)" RESET, currentUser->username);
                 Sleep(1200);
                 return;
             }
             else 
             {
-                clearLine(10);
-                gotoxy(6, 10);
+                clearLine(11);
+                gotoxy(6, 11);
                 printf(RED "Wrong Password! Please Try again..." RESET);
                 gotoxy(16, 8);
                 printf("                         ");
@@ -590,8 +646,8 @@ void LoginScreen()
 
     else 
     {
-        clearLine(10);
-        gotoxy(6, 10);
+        clearLine(11);
+        gotoxy(6, 11);
         printf(PURPLE "New user detected! Creating account..." RESET);
         Sleep(1000);
 
@@ -602,8 +658,8 @@ void LoginScreen()
 
         while (1)
         {
-            clearLine(10);
-            gotoxy(6, 10);
+            clearLine(11);
+            gotoxy(6, 11);
             printf(PURPLE "Enter your password again!" RESET);
             Sleep(1000);
             gotoxy(16, 8);
@@ -623,16 +679,16 @@ void LoginScreen()
 
                 userCnt++;
 
-                clearLine(10);
-                gotoxy(6, 10);
+                clearLine(11);
+                gotoxy(6, 11);
                 printf(GREEN "Registration Successful! Welcome, %s." RESET, currentUser->username);
                 Sleep(1500);
                 return;
             }
             else
             {
-                clearLine(10);
-                gotoxy(6, 10);
+                clearLine(11);
+                gotoxy(6, 11);
                 printf(RED "Wrong Password! Please Try again..." RESET);
                 Sleep(1500);
             }
