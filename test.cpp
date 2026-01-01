@@ -1,3 +1,4 @@
+// test game without using file handling
 #include <iostream>
 #include <stdio.h>
 #include <conio.h>
