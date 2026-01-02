@@ -24,7 +24,8 @@ void ShowScoreboardScreen();
 void saveBestScore();
 
 #define RED     "\x1b[38;5;203m"
-#define GREEN   "\x1b[38;5;120m"
+#define GREEN   "\x1b[32m"
+#define LIGHT_GREEN   "\x1b[38;5;120m"
 #define YELLOW  "\x1b[38;5;214m"
 #define BLUE    "\x1b[34m"
 #define PURPLE "\x1b[38;5;141m"
@@ -203,9 +204,9 @@ void showmenu()
         printf("\n\n");
         printf(CYAN "         =====S N A K E  G A M E=====\n\n" RESET);
         if(currentMap == 1)
-            printf(GREEN "                 ==M A P  1==\n\n\n" RESET);
+            printf(LIGHT_GREEN "                 ==M A P  1==\n\n\n" RESET);
         else if(currentMap == 2)
-            printf(GREEN "                 ==M A P  2==\n\n\n" RESET);
+            printf(LIGHT_GREEN "                 ==M A P  2==\n\n\n" RESET);
         printf("         1. Start Game\n\n");
         printf("         2. " YELLOW "Score Board\n\n" RESET);
         printf("         3. " RED "Back\n\n" RESET);
@@ -352,7 +353,7 @@ void draw()
                 if(isSuperApple)
                     printf(GOLD "%c" RESET, 149);
                 else if(isAnnona)
-                    printf(GREEN "%c" RESET, 153);
+                    printf(LIGHT_GREEN "%c" RESET, 153);
                 else if(isQuince)
                     printf(YELLOW "%c" RESET, 153);
                 else
@@ -382,7 +383,7 @@ void draw()
     printf(YELLOW "Score : %d\n" RESET, score);
     printf("Length of your snake : %d\n", nTail + 1);
     if(isFastSnake)
-        printf(GREEN "your snake is fast for %d    " RESET, int(10.0 - ((clock() - Timespeed) / CLOCKS_PER_SEC)));
+        printf(LIGHT_GREEN "your snake is fast for %d    " RESET, int(10.0 - ((clock() - Timespeed) / CLOCKS_PER_SEC)));
     else
         clearLine(25);
 }
@@ -745,15 +746,19 @@ void ShowScoreboardScreen()
             printf("\n      No records found yet!\n");
         }
 
-        for (int i = 0; i < userCnt; i++) 
+        for (int i = 0, j = 0, prevScore = 0; i < userCnt; i++) 
         {
             int score = (currentMap == 1) ? users[i].bestScoreMap1 : users[i].bestScoreMap2;
-      
-            char *color = RESET;
-            if (i == 0) color = GOLD;      
-            else if (i == 1) color = SILVER;    
-            else if (i == 2) color = BRONZE;     
-            printf("%s      %-6d %-20s %-10d" RESET "\n", color, i + 1, users[i].username, score);
+            if(score < prevScore && i)
+                j++;
+            if (j == 0)
+                printf(GOLD);      
+            else if (j == 1) 
+                printf(SILVER);    
+            else if (j == 2)
+                printf(BRONZE);     
+            printf("      %-6d %-20s %-10d" RESET "\n", j + 1, users[i].username, score);
+            prevScore = score;
         }
         
         printf("\n\n");
@@ -801,3 +806,4 @@ void saveBestScore()
     
 }
 
+//GitHub : Onyx1907
